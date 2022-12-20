@@ -13,7 +13,7 @@ public class BlockSpawn : MonoBehaviour
     public byte colourIndex = 0;
     public List<GameObject> gameInBlocks;
     [SerializeField] private GameObject[] dots;
-
+    [SerializeField] private GameObject nail;
     [SerializeField] private Transform[] blockReset;
 
     public static BlockSpawn instance;
@@ -39,6 +39,10 @@ public class BlockSpawn : MonoBehaviour
                 j++;
             }
         }
+        gameInBlocks.Add(blocks[0, 1]);
+        gameInBlocks.Add(blocks[0, 2]);
+        gameInBlocks.Add(blocks[0, 3]);
+        gameInBlocks.Add(blocks[0, 4]);
     }
 
     public void AddBlock() // üstteki kýrýlýnca sonuncu blockun bir altýna havuzdaki blocku getirecek block index max olunca bir sonraki renke geçecek renkler bitince ilk renge dönecek
@@ -53,6 +57,7 @@ public class BlockSpawn : MonoBehaviour
             colourIndex++;
         }
         blocks[colourIndex,blockIndex].transform.position = new Vector3(lastBlockTransform.position.x, lastBlockTransform.position.y - blockHeight, lastBlockTransform.position.z);
+        nail.transform.position -= new Vector3(0,blockHeight,0);
         lastBlockTransform = blocks[colourIndex,blockIndex].transform;
         blocks[colourIndex, blockIndex].GetComponent<BoxCollider>().enabled = true;
         blocks[colourIndex, blockIndex].SetActive(true);

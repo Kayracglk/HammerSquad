@@ -1,11 +1,10 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEditor.Search;
 using UnityEngine;
+using System.Linq;
+using TMPro;
 
-// Spawnlanma da sýkýntý var random olmuyor hep ayný yere spawnlanýyor
-// bir oyuncuyu merge yaparken çýkarmýyor listeden ve oyunda kalýyor
 public class PlayerSpawn : MonoBehaviour
 {
     [SerializeField] static int totalPlayerCount = 8;
@@ -23,6 +22,9 @@ public class PlayerSpawn : MonoBehaviour
 
     [SerializeField] private int mergeAmounth;
     [SerializeField] private Transform nailTransform;
+    [SerializeField] private TextMeshProUGUI totalCashText;
+    [SerializeField] private TextMeshProUGUI addWorkText;
+    [SerializeField] private TextMeshProUGUI mergeText;
 
     private void Awake()
     {
@@ -42,7 +44,9 @@ public class PlayerSpawn : MonoBehaviour
                 players[i,j].SetActive(false);
                 j++;
             }
-            
+        }
+        for (int i = 0; i < totalPlayerCount; i++)
+        {
             emptySpawnIndex.Add(i);
         }
         playerSpawnPositions = GameObject.FindGameObjectsWithTag("playerSpawnPosition");
@@ -53,6 +57,9 @@ public class PlayerSpawn : MonoBehaviour
         players[0,0].SetActive(true);
         players[0,0].transform.LookAt(nailTransform);
         ChangeGravity(players[0,0], true);
+        totalCashText.text = CashManager.instance.totalCash.ToString();
+        addWorkText.text = addAmounth.ToString();
+        mergeText.text= mergeAmounth.ToString();
     }
 
     public void PlayerAdd()
@@ -61,17 +68,19 @@ public class PlayerSpawn : MonoBehaviour
         {
             if (playerInGame.Count <= totalPlayerCount - 1)
             {
-                byte random = (byte)UnityEngine.Random.Range(0, (emptySpawnIndex.Count - 1));
-                players[0,playerLevelList[0]].SetActive(true);
-                //players[0, playerLevelList[0]].GetComponent<BoxCollider>().isTrigger = true;
-                players[0, playerLevelList[0]].transform.position = playerSpawnPositions[emptySpawnIndex[random]].transform.position;
-                players[0, playerLevelList[0]].transform.LookAt(nailTransform);
-                emptySpawnIndex.Remove(random);
-                ChangeGravity(players[0, playerLevelList[0]], true);
-                playerInGame.Add(players[0, playerLevelList[0]]);
+                GameObject player = players[0, playerLevelList[0]];
+                player.SetActive(true);
+                player.GetComponent<Player>().spawnIndex= (byte)emptySpawnIndex[0];
+                player.transform.position = playerSpawnPositions[emptySpawnIndex[0]].transform.position;
+                player.transform.LookAt(nailTransform);
+                emptySpawnIndex.RemoveAt(0);
+                ChangeGravity(player, true);
+                playerInGame.Add(player);
                 playerLevelList[0]++;
                 CashManager.instance.totalCash -= addAmounth;
-                addAmounth = (int) (addAmounth * 1.5);
+                totalCashText.text = CashManager.instance.totalCash.ToString();
+                addAmounth = (int) (addAmounth * 1.2);
+                addWorkText.text = addAmounth.ToString();
                 if (playerLevelList[0] >= 3) // 3 -> birleþme için gerekli minimum sayi
                 {
                     mergeButton.SetActive(true);
@@ -95,11 +104,17 @@ public class PlayerSpawn : MonoBehaviour
             {
                 if (item >= 3)
                 {
-                    for (int i = 0; i < playerInGame.Count; i++)
+                    
+                    int a = playerInGame.Count;
+                    //playerInGame = SortList(playerInGame);
+                    playerInGame = playerInGame.OrderBy(o => o.GetComponent<Player>().playerLevel).ToList();
+                    int b = playerLevelList[0];
+                    for (int i = 0; i < a; i++)
                     {
-                        GameObject player = playerInGame[i];
+                        GameObject player = playerInGame[0];
                         if (playerMergeCount > 0 && player.GetComponent<Player>().playerLevel == index) // player levellar 0 dan baþlýyor
                         {
+                            emptySpawnIndex.Add(player.GetComponent<Player>().spawnIndex);
                             playerInGame.Remove(player);
                             //player.GetComponent<BoxCollider>().isTrigger = false;
                             ChangeGravity(player, false);
@@ -107,22 +122,19 @@ public class PlayerSpawn : MonoBehaviour
                             playerLevelList[index]--;
                             playerMergeCount--;
                         }
-                        if (playerMergeCount <= 0)
-                        {
-                            break;
-                        }
                     }
-                    byte random = (byte)UnityEngine.Random.Range(0, (emptySpawnIndex.Count - 1));
-                    players[index + 1,playerLevelList[index + 1]].transform.position = playerSpawnPositions[emptySpawnIndex[random]].transform.position;
-                    players[index + 1, playerLevelList[index + 1]].SetActive(true);
-                    players[index + 1, playerLevelList[index + 1]].transform.LookAt(nailTransform);
-                    //players[index + 1, playerLevelList[index + 1]].GetComponent<BoxCollider>().isTrigger = true;
-                    ChangeGravity(players[index + 1, playerLevelList[index + 1]], true);
-                    emptySpawnIndex.Remove(random);
-                    playerInGame.Add(players[index + 1, playerLevelList[index + 1]]);
-                    playerLevelList[index + 1]++;
+                    GameObject player0 = players[index + 1, playerLevelList[index + 1]];
+                    player0.transform.position = playerSpawnPositions[emptySpawnIndex[0]].transform.position;
+                    player0.SetActive(true);
+                    player0.transform.LookAt(nailTransform);
+                    player0.GetComponent<Player>().spawnIndex = (byte)emptySpawnIndex[0];
+                    ChangeGravity(player0, true);
+                    emptySpawnIndex.RemoveAt(0);
+                    playerInGame.Add(player0);
+                    playerLevelList[index + 1] = playerLevelList[index + 1] + 1;
                     CashManager.instance.totalCash -= mergeAmounth;
-                    mergeAmounth = (int)(mergeAmounth * 1.5);
+                    mergeAmounth = (int)(mergeAmounth * 1.3);
+                    mergeText.text= mergeAmounth.ToString();
                     break;
                 }
                 index++;
